@@ -30,12 +30,40 @@ class AlienInvasion:
 		while True:
 			self.settings.clock.tick(300) # FPS of the game
 			self._check_events()
-			self._update_screen()
 			self.ship.update()
 			self._update_bullets()
+			self._update_screen()
+			print("FPS:", int(self.settings.clock.get_fps()))
 
 	def _create_fleet(self):
 		"""Method that controls a fleet of the aliens"""
+		# Make an alien
+		alien = Alien(self)
+		self.aliens.add(alien)
+		# Alien`s settings
+		alien_width, alien_height = alien.rect.size	
+		# Space that we can use
+		available_space_x = self.settings.screen_width - (2 * alien_width)
+		# Number of aliens that can fit on the screen
+		number_aliens_x = available_space_x // (2 * alien_width)
+		# Number of rows
+		ship_height = self.ship.rect.height
+		available_space_y = self.settings.screen_height - (3 * alien_height) - ship_height
+		number_rows = available_space_y // (2 * alien_width)
+		for alien_number in range(number_aliens_x):
+			self._create_alien(alien_number)
+		for row_number in range(number_rows)	
+
+
+	def _create_alien(self, alien_number):
+		alien = Alien(self)
+		alien_width = alien.rect.width
+		alien_height = alien.rect.height 
+		alien.y = alien_height + 2 * alien_height * alien_number
+		alien.x = alien_width + 2 * alien_width * alien_number
+		alien.rect.x = alien.x
+		alien.rect.y = alien.y
+		self.aliens.add(alien)
 
 	def _update_screen(self):
 		"""Method that controls everything on the screen"""
@@ -44,6 +72,7 @@ class AlienInvasion:
 		self.counter.blitme(len(self.bullets)) # Calls the method of the counter to change the digit on the screen
 		for bullet in self.bullets.sprites():
 			bullet.draw_bullet()	# Draws the bullets on the screen
+		self.aliens.draw(self.screen)
 		pygame.display.flip() # Shows everything on the screen
 
 	def _update_bullets(self):

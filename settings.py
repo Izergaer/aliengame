@@ -12,6 +12,8 @@ class Settings:
 		self.bg_color_black = (0, 0, 0)
 		self.caption = "Alien Invasion"
 		self.clock = pygame.time.Clock() # FPS of the game
+		
+		# Ship
 		self.ship_speed = 1 
 
 		# Bullet
