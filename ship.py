@@ -7,7 +7,8 @@ class Ship:
 		self.screen = ai_game.screen
 		self.settings = ai_game.settings
 		self.screen_rect = ai_game.screen.get_rect() # Gets rect of game screen
-		self.image = pygame.image.load("images/ship.bmp") # Loads ship`s image 
+		self.image = pygame.image.load("images/ship.png") # Loads ship`s image
+		self.image = pygame.transform.scale(self.image,(60, 48)) 
 		self.rect = self.image.get_rect() # Gets rect of ship`s image
 		self.rect.midbottom = self.screen_rect.midbottom # Gets starting pos of ship
 		self.x = float(self.rect.x)
