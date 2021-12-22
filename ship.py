@@ -8,6 +8,7 @@ class Ship:
 		self.settings = ai_game.settings
 		self.screen_rect = ai_game.screen.get_rect() # Gets rect of game screen
 		self.image = pygame.image.load("images/ship.png") # Loads ship`s image
+		self.ships_left = ai_game.stats.ships_left
 		self.image = pygame.transform.scale(self.image,(60, 48)) 
 		self.rect = self.image.get_rect() # Gets rect of ship`s image
 		self.rect.midbottom = self.screen_rect.midbottom # Gets starting pos of ship
@@ -30,3 +31,7 @@ class Ship:
 	def blitme(self):
 		"""Draws the ship on the game screen"""
 		self.screen.blit(self.image, self.rect)	
+
+	def center_ship(self):
+		self.rect.midbottom = self.screen_rect.midbottom
+		self.x = float(self.rect.x)

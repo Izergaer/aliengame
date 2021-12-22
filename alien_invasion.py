@@ -1,5 +1,8 @@
 import sys, pygame
+from time import sleep
 from random import randint
+from game_stats import GameStats
+from sounds import Sounds
 from settings import Settings
 from ship import Ship
 from bullet import Bullet
@@ -16,30 +19,35 @@ class AlienInvasion:
 		self.settings = Settings() # Creates an instance of the class Settings
 		self.screen = pygame.display.set_mode((self.settings.screen_width, self.settings.screen_height))
 		pygame.display.set_caption(self.settings.caption)
-		self._create_instances()
-		self._create_fleet()
-		self._create_star()
+		self._create_instances() # Create instances of the classes we need
+		self._create_fleet() # Create the first fleet
+		self._create_star() # Create stars
+		self.game_active = True # Create game with the True game_active flag 
 
 	def _create_instances(self):
 		"""Method that creates instances of every class we need"""
+		self.stats = GameStats(self) # Stats
 		self.bullets = pygame.sprite.Group() # Creates a group for the bullets 
 		self.aliens = pygame.sprite.Group() # Creates a group for the aliens
 		self.stars = pygame.sprite.Group() # Creates a group for the stars
 		self.counter = Counter(self) # Creates an insctance of the ammo counter
 		self.ship = Ship(self) # Creates an instance of the class Ship
+		self.sounds = Sounds()
 
 	def run_game(self):
 		"""Main cycle of the game""" 
 		while True:
-			self.settings.clock.tick(300) # FPS of the game
-			self._check_events()
-			self.ship.update()
-			self._update_bullets()
-			self._update_screen()
-			self.aliens.update()
-			self._check_borders()
-			print("FPS:", int(self.settings.clock.get_fps()))
-			print(self.stars)
+			pygame.time.Clock().tick(500) # FPS of the game
+			self._check_events() # Check user`s events
+			if self.game_active:
+				self.ship.update() # Update the ship
+				self._update_bullets() # Update bullets
+				self.aliens.update() # Update aliens
+			self._check_borders() # See the method commentary
+			self._check_aliens_position() # See the method commentary
+			self._check_bottom() # See the method commentary
+			self._update_screen() # Update image on the screen
+			print("FPS:", int(pygame.time.Clock().get_fps()))
 
 	def _create_fleet(self):
 		"""Method that controls a fleet of the aliens"""
@@ -60,15 +68,52 @@ class AlienInvasion:
 			for alien_number in range(number_aliens_x):
 				self._create_alien(alien_number, row_number)	
 
+	def _check_aliens_position(self):
+		if pygame.sprite.spritecollideany(self.ship, self.aliens):
+			self._ship_hit()
+
+	def _ship_hit(self):
+		if self.stats.ships_left:
+			self.stats.ships_left -= 1
+			print(self.stats.ships_left)
+			# Delete aliens and bullets
+			self.aliens.empty()
+			self.bullets.empty()
+
+			# Center the ship
+			self.ship.center_ship()
+
+			# Play the lose music
+			self.sounds.play_lose_sound()
+
+			# Pause the game
+			sleep(0.5)
+		else:
+			self.game_active = False
+
 	def _check_borders(self):
+		# Check whether an alien touches a border of the screen
 		for alien in self.aliens:
 			if alien.check_edges():
-				for alien in self.aliens:
-					alien.rect.y += self.settings.drop_speed
-				self.settings.fleet_direction *= -1
+				self._change_fleet_direction()
 				break
 
+	def _check_bottom(self):
+		screen_rect = self.screen.get_rect()
+		# Check whether an alien touches the bottom of the screen
+		for alien in self.aliens.sprites():
+			if alien.rect.bottom >= screen_rect.bottom:
+				self._ship_hit()
+				break
+
+	def _change_fleet_direction(self):
+		# Change fleet`s direction when an alien touches a border of the screen
+		for alien in self.aliens:
+			alien.rect.y += self.settings.drop_speed
+		self.settings.fleet_direction *= -1	
+
 	def _create_alien(self, alien_number, row_number):
+		# Creates aliens
 		alien = Alien(self)
 		alien_width, alien_height = alien.rect.size
 		alien.x = alien_width + 2 * alien_width * alien_number
@@ -76,13 +121,12 @@ class AlienInvasion:
 		alien.rect.y = alien.rect.height + 2 * alien.rect.height * row_number
 		self.aliens.add(alien)
 
-
 	def _create_star(self):
 		"""Method that creates the stars"""
 		for star in range(randint(20, 25)): # Gets random number of the stars
 			star = Star(self)
-			star.rect.x = randint(0, 640) # Gets random coordinates of the stars
-			star.rect.y = randint(0, 470) 
+			star.rect.x = randint(0, 1024) # Gets random coordinates of the stars
+			star.rect.y = randint(0, 768) 
 			self.stars.add(star)
 
 	def _update_screen(self):
@@ -96,24 +140,20 @@ class AlienInvasion:
 		self.aliens.draw(self.screen)
 		pygame.display.flip() # Shows everything on the screen
 
-	def _update_stars(self):
-		"""Method that updates stars"""
-		self.stars.update()
-		for star in self.stars.copy():
-			if star.rect.y > 480:
-				self.bullets.remove(star)
-				if randint(0, 5) == 5:
-					self._create_star(1)
-				else:
-					pass
-
 	def _update_bullets(self):
 		self.bullets.update()
 		# Deletes unnecesary bullets
 		for bullet in self.bullets.copy():
 			if bullet.rect.y < 0:
 				self.bullets.remove(bullet)
-		print(len(self.bullets)) # Debug
+		self._check_bullets_and_aliens_collisions()
+
+	def _check_bullets_and_aliens_collisions(self):
+		# Checks whether a bullet hits an alien
+		collisions = pygame.sprite.groupcollide(self.bullets, self.aliens, True, True)
+		if not self.aliens:
+			self.bullets.empty()
+			self._create_fleet()
 
 	def _check_events(self):
 		""" Looking for special events from user input"""
@@ -151,6 +191,7 @@ class AlienInvasion:
 		if len(self.bullets) < self.settings.bullets_allowed:
 			new_bullet = Bullet(self)
 			self.bullets.add(new_bullet)
+			self.sounds.play_shoot_sound()
 
 if __name__ == "__main__":
 	ai = AlienInvasion() # Creates an instance of the class AlienInvasion and starts the game
