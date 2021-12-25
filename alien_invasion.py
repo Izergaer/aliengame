@@ -9,6 +9,7 @@ from bullet import Bullet
 from counter import Counter
 from alien import Alien 
 from star import Star
+from button import Button
 
 
 class AlienInvasion:
@@ -33,22 +34,23 @@ class AlienInvasion:
 		self.counter = Counter(self) # Creates an insctance of the ammo counter
 		self.ship = Ship(self) # Creates an instance of the class Ship
 		self.sounds = Sounds()
+		self.play_button = Button(self, "Play")
 
 	def run_game(self):
 		"""Main cycle of the game""" 
 		while True:
 			pygame.time.Clock().tick(500) # FPS of the game
-			self._check_events() # Check user`s events
 			if self.game_active:
 				self.ship.update() # Update the ship
 				self._update_bullets() # Update bullets
 				self.aliens.update() # Update aliens
+				print("FPS:", int(pygame.time.Clock().get_fps()))
+			self._check_events() # Check user`s events
 			self._check_borders() # See the method commentary
 			self._check_aliens_position() # See the method commentary
 			self._check_bottom() # See the method commentary
 			self._update_screen() # Update image on the screen
-			print("FPS:", int(pygame.time.Clock().get_fps()))
-
+			
 	def _create_fleet(self):
 		"""Method that controls a fleet of the aliens"""
 		# Make an alien
@@ -138,6 +140,8 @@ class AlienInvasion:
 		for bullet in self.bullets.sprites():
 			bullet.draw_bullet()	# Draws the bullets on the screen
 		self.aliens.draw(self.screen)
+		if not self.game_active:
+			self.play_button.draw_button()
 		pygame.display.flip() # Shows everything on the screen
 
 	def _update_bullets(self):
@@ -166,6 +170,10 @@ class AlienInvasion:
 					self._check_keydown_events(event)
 				elif event.type == pygame.KEYUP:
 					self._check_keyup_events(event)
+				elif event.type == pygame.MOUSEBUTTONDOWN:
+					print("[DEBUG1]")
+					mouse_pos = pygame.mouse.get_pos()
+					self._check_play_button(mouse_pos)
 
 	def _check_keydown_events(self, event):
 		if event.key == pygame.K_RIGHT:
@@ -175,8 +183,16 @@ class AlienInvasion:
 		# Quit when the player presses the Q button
 		elif event.key == pygame.K_q:
 			sys.exit()
-		elif event.key == pygame.K_SPACE:
-			self._fire_bullet()
+		elif event.key == pygame.K_F12:
+			self._ship_hit()
+		if self.game_active:
+			if event.key == pygame.K_SPACE:
+				self._fire_bullet()
+
+	def _check_play_button(self, mouse_pos):
+		print("[DEBUG2]")
+		if self.play_button.rect.collidepoint(mouse_pos):
+			self.game_active = True
 
 	def _check_keyup_events(self, event):
 		# Stop moving when the key isn`t pressed
