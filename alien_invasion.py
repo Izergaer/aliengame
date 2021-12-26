@@ -31,7 +31,8 @@ class AlienInvasion:
 		self.bullets = pygame.sprite.Group() # Creates a group for the bullets 
 		self.aliens = pygame.sprite.Group() # Creates a group for the aliens
 		self.stars = pygame.sprite.Group() # Creates a group for the stars
-		self.counter = Counter(self) # Creates an insctance of the ammo counter
+		self.counter_bullets = Counter(self, "topright") # Creates an insctance of the ammo counter
+		self.counter_ships = Counter(self, "topleft")
 		self.ship = Ship(self) # Creates an instance of the class Ship
 		self.sounds = Sounds()
 		self.play_button = Button(self, "Play")
@@ -136,10 +137,11 @@ class AlienInvasion:
 		self.screen.fill(self.settings.bg_color_white) # Fills backround with a color
 		self.stars.draw(self.screen)
 		self.ship.blitme() # Draws the ship
-		self.counter.blitme(len(self.bullets)) # Calls the method of the counter to change the digit on the screen
 		for bullet in self.bullets.sprites():
 			bullet.draw_bullet()	# Draws the bullets on the screen
 		self.aliens.draw(self.screen)
+		self.counter_bullets.blitme(len(self.bullets)) # Calls the method of the counter to change the digit on the screen
+		self.counter_ships.blitme(self.stats.ships_left)
 		if not self.game_active:
 			self.play_button.draw_button()
 		pygame.display.flip() # Shows everything on the screen
@@ -183,16 +185,28 @@ class AlienInvasion:
 		# Quit when the player presses the Q button
 		elif event.key == pygame.K_q:
 			sys.exit()
+		# Debug button
 		elif event.key == pygame.K_F12:
 			self._ship_hit()
+		# Restart game if the player presses the P button
+		elif event.key == pygame.K_p:
+			if not self.game_active:
+				self._restart_game()
 		if self.game_active:
 			if event.key == pygame.K_SPACE:
 				self._fire_bullet()
 
 	def _check_play_button(self, mouse_pos):
 		print("[DEBUG2]")
-		if self.play_button.rect.collidepoint(mouse_pos):
-			self.game_active = True
+		if self.play_button.rect.collidepoint(mouse_pos) and not self.game_active: # Let click the Play button if only the game isn`t currently active
+			self._restart_game()
+
+	def _restart_game(self):
+		self.stats.reset_stats()
+		self.aliens.empty() # Delete unneseccary aliens
+		self.bullets.empty() # Delete unneseccary bullets
+		self.ship.center_ship()
+		self.game_active = True
 
 	def _check_keyup_events(self, event):
 		# Stop moving when the key isn`t pressed
