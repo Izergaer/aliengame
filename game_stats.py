@@ -3,7 +3,7 @@ class GameStats:
 		self.settings = ai_game.settings 
 		self.reset_stats()
 		self.score = 0
-		self.high_score = 0
+		self.high_score = ai_game.highscore.get_highscore()
 		self.level = 1 
 
 	def reset_stats(self):

@@ -6,11 +6,11 @@ from sounds import Sounds
 from settings import Settings
 from ship import Ship
 from bullet import Bullet
-from counter import Counter
 from alien import Alien 
 from star import Star
 from button import Button
 from scoreboard import ScoreBoard
+from highscore import HighScore
 
 
 class AlienInvasion:
@@ -19,7 +19,7 @@ class AlienInvasion:
 		"""Initialises pygame`s resources"""
 		pygame.init()
 		self.settings = Settings() # Creates an instance of the class Settings
-		self.screen = pygame.display.set_mode((self.settings.screen_width, self.settings.screen_height))
+		self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 		pygame.display.set_caption(self.settings.caption)
 		self._create_instances() # Create instances of the classes we need
 		self._create_fleet() # Create the first fleet
@@ -29,17 +29,15 @@ class AlienInvasion:
 
 	def _create_instances(self):
 		"""Method that creates instances of every class we need"""
+		self.highscore = HighScore() 
 		self.stats = GameStats(self) # Stats
 		self.bullets = pygame.sprite.Group() # Creates a group for the bullets 
 		self.aliens = pygame.sprite.Group() # Creates a group for the aliens
 		self.stars = pygame.sprite.Group() # Creates a group for the stars
-		self.counter_bullets = Counter(self, "topright") # Creates an insctance of the ammo counter
-		self.counter_ships = Counter(self, "topleft")
 		self.ship = Ship(self) # Creates an instance of the class Ship
 		self.sounds = Sounds()
-		
+
 		# Buttons
-		self.play_button = Button(self, "Play", "play_button")
 		self.easy_button = Button(self, "Easy", "easy_button")
 		self.hard_button = Button(self, "Hard", "hard_button")
 
@@ -97,6 +95,9 @@ class AlienInvasion:
 
 			self._create_fleet()
 
+			# Change the scoreboard
+			self.scoreboard.prep_ships()
+
 			# Pause the game
 			sleep(0.5)
 		else:
@@ -149,8 +150,6 @@ class AlienInvasion:
 		for bullet in self.bullets.sprites():
 			bullet.draw_bullet()	# Draws the bullets on the screen
 		self.aliens.draw(self.screen)
-		self.counter_bullets.blitme(len(self.bullets)) # Calls the method of the counter to change the digit on the screen
-		self.counter_ships.blitme(self.stats.ships_left)
 		if self.game_active:
 			self.scoreboard.show_score()
 		if not self.game_active:
@@ -171,26 +170,33 @@ class AlienInvasion:
 		collisions = pygame.sprite.groupcollide(self.bullets, self.aliens, 
 			True, True)
 		if collisions:
-			for aliens in collisions.values():
-				"""Add score for every killed alien"""
-				self.stats.score += self.settings.alien_points * len(aliens)
-			"""Change score"""
-			self.scoreboard.prep_score()
-			
+			self._change_score(collisions)
+
 		if not self.aliens:
 			"""If all aliens are dead"""
-			self.settings.increase_speed()
-			self.bullets.empty()
-			self.ship.center_ship()
-			self._create_fleet()
-			self.stats.level += 1
-			self.scoreboard.prep_level()
-			self.scoreboard.check_high_score()
+			self._change_level()
+
+	def _change_score(self, collisions):
+		for aliens in collisions.values():
+			"""Add score for every killed alien"""
+			self.stats.score += self.settings.alien_points * len(aliens)
+		"""Change score"""
+		self.scoreboard.prep_score()
+		self.scoreboard.check_high_score()
+
+	def _change_level(self):
+		self.settings.increase_speed()
+		self.bullets.empty()
+		self.ship.center_ship()
+		self._create_fleet()
+		self.stats.level += 1
+		self.scoreboard.prep_level()
 
 	def _check_events(self):
 		""" Looking for special events from user input"""
 		for event in pygame.event.get():
 				if event.type == pygame.QUIT:
+					self.scoreboard.high_score(self.stats.score)
 					sys.exit()
 				
 				# Moving events
@@ -209,6 +215,7 @@ class AlienInvasion:
 			self.ship.moving_left = True
 		# Quit when the player presses the Q button
 		elif event.key == pygame.K_q:
+			self.highscore.high_score(self.stats.score)
 			sys.exit()
 		# Debug button
 		elif event.key == pygame.K_F12:
@@ -242,14 +249,12 @@ class AlienInvasion:
 		self.scoreboard.prep_score()
 		self.scoreboard.prep_high_score()
 		self.scoreboard.prep_level()
+		self.scoreboard.prep_ships()
 
 		if hard:
 			self.settings.increase_speed(2)
 		pygame.mouse.set_visible(False)
 		self.game_active = True
-
-	def _change_(self):
-		pass
 
 	def _check_keyup_events(self, event):
 		# Stop moving when the key isn`t pressed
